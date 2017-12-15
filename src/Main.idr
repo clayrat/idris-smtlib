@@ -1,58 +1,34 @@
 module Main
 
-%default total
-%access public export
+import Text.PrettyPrint.WL
 
-data Symbol = MkSymbol String
+import AST
+import Print
 
-data SExpr = SList (List SExpr) | SKeyword String | SSymbol Symbol 
-
--- Identifier used to be indexed with Index type, that could be either SSymbol or SNumeral.
--- This is actually the current (2.5) SMT-LIB standard.                                    
--- But in order to support some extensions in Z3, we use full SExpr as index.              
-data Identifier = MkIdentifier Symbol (List SExpr)
-
-data Sort = MkSort Identifier (List Sort)
-
-data SortedVar = MkSortedVar Symbol Sort
-
-mutual 
-  data VarBinding = MkVarBinding Symbol Term
-  data Term = Expr SExpr
-            | Let VarBinding (List VarBinding) Term
-            | Forall SortedVar (List SortedVar) Term
-            | Exists SortedVar (List SortedVar) Term
-            -- TODO rest
-            
-data FunDef = MkFunDef Symbol (List SortedVar) Sort Term
-
-data SMTOption = ProduceModels Bool 
-               | ProduceProofs Bool 
-               | ProduceUnsatCores Bool
-               -- TODO rest
-
-data Command = Echo String
-             | DeclareConst Symbol Sort
-             | DeclareFun Symbol (List Sort) Sort
-             | DeclareSort Symbol Int
-             | DefineFun FunDef
-             | DefineSort Symbol (List Symbol) Sort
-             | Assert Term
-             | CheckSat
-             | GetModel
-             | Push Int
-             | Pop Int
-             | SetOption SMTOption
-             | Reset
-
--------- 2.6
--- DeclareDatatype
--- DeclareDatatypes          
-
--------- Z3-specific
--- Display
--- Simplify   
--- Eval
+test : List Command
+test = [ DeclareConst (MkSymbol "x") (MkSort (MkIdentifier (MkSymbol "Real") []) []) 
+       , DeclareConst (MkSymbol "y") (MkSort (MkIdentifier (MkSymbol "Real") []) []) 
+       , DeclareConst (MkSymbol "z") (MkSort (MkIdentifier (MkSymbol "Real") []) []) 
+       , Assert (FunApp (MkQIdentifier (MkIdentifier (MkSymbol "=") []) Nothing)
+                 [ FunApp (MkQIdentifier (MkIdentifier (MkSymbol "-") []) Nothing)
+                   [ FunApp (MkQIdentifier (MkIdentifier (MkSymbol "+") []) Nothing)
+                     [ FunApp (MkQIdentifier (MkIdentifier (MkSymbol "*") []) Nothing) 
+                       [ Lit (Numeral 3)
+                       , QI (MkQIdentifier (MkIdentifier (MkSymbol "x") []) Nothing)]
+                     , FunApp (MkQIdentifier (MkIdentifier (MkSymbol "*") []) Nothing)
+                       [ Lit (Numeral 2)
+                       , QI (MkQIdentifier (MkIdentifier (MkSymbol "y") []) Nothing)]]
+                   , QI (MkQIdentifier (MkIdentifier (MkSymbol "z") []) Nothing)]
+                 , Lit (Numeral 1) ])
+       , CheckSat
+       , GetModel
+       ]
+{-
+(assert (= (- (+ (* 3 x) (* 2 y)) z) 1))
+(assert (= (+ (- (* 2 x) (* 2 y)) (* 4 z)) -2))
+(assert (= (- (+ (- 0 x) (* 0.5 y)) z) 0))
+-}
 
 main : IO ()
-main = printLn "wop"
+main = do _ <- Default.writeDoc "test.smt2" $ ppScript test
+          pure ()
