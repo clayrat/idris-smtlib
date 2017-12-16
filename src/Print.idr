@@ -2,7 +2,7 @@ module Print
 
 import Text.PrettyPrint.WL
 
-import AST 
+import AST
 
 %default total
 %access public export
@@ -25,7 +25,7 @@ ppLiteral (Numeral i) = integer i
 ppLiteral (Decimal d) = double d
 
 -- TODO use sizeAccessible? it doesn't like ppSort passed to map recursively
-mutual 
+mutual
   ppSort : Sort -> Doc
   ppSort (MkSort (MkIdentifier id _) []) = ppSym id
   ppSort (MkSort (MkIdentifier id _) subs@(_ :: _)) = parens (ppSym id |++| hsep (ppSortAux subs))
@@ -38,7 +38,7 @@ ppSortedVar : SortedVar -> Doc
 ppSortedVar (MkSortedVar name sort) = ppSym name |++| ppSort sort
 
 -- TODO HOFs again
-mutual 
+mutual
   ppSExpr : SExpr -> Doc
   ppSExpr (SList sexprs) = parens (hsep (ppSExprAux sexprs))
   ppSExpr (SKeyword kw) = text kw
@@ -53,7 +53,7 @@ ppQId (MkQIdentifier (MkIdentifier id _) Nothing)     = ppSym id
 ppQId (MkQIdentifier (MkIdentifier id _) (Just sort)) = parens (text "as" |++| ppSym id |++| ppSort sort)
 
 -- TODO HOFs yet again
-mutual   
+mutual
   ppVarBind : VarBinding -> Doc
   ppVarBind (MkVarBinding name term) = parens (ppSym name |++| ppTerm term)
 
@@ -63,13 +63,13 @@ mutual
   ppTerm (FunApp qid []) = ppQId qid
   ppTerm (FunApp qid ts) = parens (ppQId qid |++| hsep (ppTermAux ts))
   ppTerm (Let vb vbs t) = parens (text "let" |++| parens (ppVarBind vb |+| ppListOpt ppVarBind vbs) |++| ppTerm t)
-  ppTerm (Forall sv svs t) = parens (text "forall" |++| parens (ppSortedVar sv |+| ppListOpt ppSortedVar svs) |++| ppTerm t) 
+  ppTerm (Forall sv svs t) = parens (text "forall" |++| parens (ppSortedVar sv |+| ppListOpt ppSortedVar svs) |++| ppTerm t)
   ppTerm (Exists sv svs t) = parens (text "exists" |++| parens (ppSortedVar sv |+| ppListOpt ppSortedVar svs) |++| ppTerm t)
 
   ppTermAux : List Term -> List Doc
   ppTermAux [] = []
   ppTermAux (t :: ts) = ppTerm t :: ppTermAux ts
-  
+
 ppFunDef : FunDef -> Doc
 ppFunDef (MkFunDef name svars ret body) = ppSym name |++| ppSList ppSortedVar svars |++| ppSort ret |++| ppTerm body
 

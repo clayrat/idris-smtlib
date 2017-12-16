@@ -3,31 +3,28 @@ module Main
 import Text.PrettyPrint.WL
 
 import AST
+import DSL
 import Print
 
 test : List Command
-test = [ DeclareConst (MkSymbol "x") (MkSort (MkIdentifier (MkSymbol "Real") []) []) 
-       , DeclareConst (MkSymbol "y") (MkSort (MkIdentifier (MkSymbol "Real") []) []) 
-       , DeclareConst (MkSymbol "z") (MkSort (MkIdentifier (MkSymbol "Real") []) []) 
-       , Assert (FunApp (MkQIdentifier (MkIdentifier (MkSymbol "=") []) Nothing)
-                 [ FunApp (MkQIdentifier (MkIdentifier (MkSymbol "-") []) Nothing)
-                   [ FunApp (MkQIdentifier (MkIdentifier (MkSymbol "+") []) Nothing)
-                     [ FunApp (MkQIdentifier (MkIdentifier (MkSymbol "*") []) Nothing) 
-                       [ Lit (Numeral 3)
-                       , QI (MkQIdentifier (MkIdentifier (MkSymbol "x") []) Nothing)]
-                     , FunApp (MkQIdentifier (MkIdentifier (MkSymbol "*") []) Nothing)
-                       [ Lit (Numeral 2)
-                       , QI (MkQIdentifier (MkIdentifier (MkSymbol "y") []) Nothing)]]
-                   , QI (MkQIdentifier (MkIdentifier (MkSymbol "z") []) Nothing)]
-                 , Lit (Numeral 1) ])
-       , CheckSat
-       , GetModel
+test = [ declareReal "x"
+       , declareReal "y"
+       , declareReal "z"
+       , assert $ app "=" [ app "-" [ app "+" [ app "*" [ num 3, var "x" ]
+                                              , app "*" [ num 2, var "y" ]]
+                                    , var "z" ]
+                          , num 1 ]
+       , assert $ app "=" [ app "+" [ app "-" [ app "*" [ num 2, var "x" ]
+                                              , app "*" [ num 2, var "y" ]]
+                                    , app "*" [ num 4, var "z" ] ]
+                          , num (-2) ]
+       , assert $ app "=" [ app "-" [ app "+" [ app "-" [ num 0, var "x" ]
+                                              , app "*" [ dec 0.5, var "y" ]]
+                                    , var "z" ]
+                          , num 0 ]
+       , checkSat
+       , getModel
        ]
-{-
-(assert (= (- (+ (* 3 x) (* 2 y)) z) 1))
-(assert (= (+ (- (* 2 x) (* 2 y)) (* 4 z)) -2))
-(assert (= (- (+ (- 0 x) (* 0.5 y)) z) 0))
--}
 
 main : IO ()
 main = do _ <- Default.writeDoc "test.smt2" $ ppScript test
