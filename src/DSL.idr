@@ -64,19 +64,19 @@ SMTCommand : Type -> Type
 SMTCommand = Freer SMTCommandF
 
 declareReal : String -> SMTCommand SMTReal
-declareReal s = SDeclareReal s `Then` Return
+declareReal s = liftF $ SDeclareReal s
 
 declareInt : String -> SMTCommand SMTInt
-declareInt s = SDeclareInt s `Then` Return
+declareInt s = liftF $ SDeclareInt s
 
 assert : Term -> SMTCommand ()
-assert t = SAssert t `Then` Return
+assert t = liftF $ SAssert t 
 
 checkSat : SMTCommand ()
-checkSat = SCheckSat `Then` Return
+checkSat = liftF SCheckSat 
 
 getModel : SMTCommand ()
-getModel = SGetModel `Then` Return
+getModel = liftF SGetModel
 
 writeCommands : SMTCommand a -> Writer (List Command) a
 writeCommands = foldFreer $ \instruction =>
