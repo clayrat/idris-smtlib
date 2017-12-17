@@ -5,7 +5,7 @@ module Util
 
 infixr 1 =<<
 infixr 1 <=<, >=>
-        
+
 -- | Left-to-right Kleisli composition of monads.
 (>=>) : Monad m => (a -> m b) -> (b -> m c) -> (a -> m c)
 (>=>) f g = \x => f x >>= g

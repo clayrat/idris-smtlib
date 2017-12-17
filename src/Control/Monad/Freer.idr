@@ -26,16 +26,6 @@ Applicative (Freer f) where
   (Return f) <*> param = map f param
   (Then action yield) <*> param = assert_total $ Then action ((<*> param) . yield)
 
-{-  
-  Return _ *> a = a
-  Then r f *> a = Then r ((*> a) . f)
-  -- INLINE (*>) --
-
-  Return a <* b = b *> Return a
-  Then r f <* a = Then r ((<* a) . f)
-  -- INLINE (<*) --
--}
-
 Monad (Freer f) where
   (Return a) >>= f = f a
   (Then r f) >>= g = assert_total $ Then r (g <=< f)
