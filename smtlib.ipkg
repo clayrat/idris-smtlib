@@ -2,10 +2,11 @@ package SmtLib
 
 sourcedir = src
 
-modules = Util
+modules = Util 
         , Control.Monad.Freer
         , AST
         , Print
         , Parse
-
+        , DSL
+        
 opts = "-p contrib -p bifunctors -p idris_free --total"
