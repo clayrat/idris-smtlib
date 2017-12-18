@@ -2,7 +2,7 @@
 
 Parser/printer for SMT-LIB format in Idris.
 
-Examples from (Yurichev, "Quick introduction into SAT/SMT solvers and symbolic execution")[https://yurichev.com/writings/SAT_SMT_draft-EN.pdf].
+Examples from [Yurichev, "Quick introduction into SAT/SMT solvers and symbolic execution"](https://yurichev.com/writings/SAT_SMT_draft-EN.pdf).
 
 See also:
 * [Scala SMT-LIB](https://github.com/regb/scala-smtlib)
