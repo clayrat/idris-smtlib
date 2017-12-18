@@ -1,5 +1,6 @@
 module Main
 
+import System
 import Text.PrettyPrint.WL
 
 import Control.Monad.Freer
@@ -11,50 +12,91 @@ import DSL
 import Print
 
 ex1 : SMTCommand ()
-ex1 = do x' <- declareReal "x" ; let x = toTerm x'
-         y' <- declareReal "y" ; let y = toTerm y'
-         z' <- declareReal "z" ; let z = toTerm z'
-         assert $ (3*x + 2*y - z) `eq` 1
-         assert $ (2*x - 2*y + 4*z) `eq` (-2)
-         assert $ ((-x) + (d 0.5)*y - z) `eq` 0
-         checkSat
-         getModel
+ex1 = do ds' <- traverse declareReal ["x", "y", "z"]
+         case map toTerm ds' of 
+           [x, y, z] => 
+             do assert $ (3*x + 2*y - z) `eq` 1
+                assert $ (2*x - 2*y + 4*z) `eq` (-2)
+                assert $ ((-x) + (d 0.5)*y - z) `eq` 0
+                checkSat
+                getModel
+           _ => Pure ()
 
 ex2 : SMTCommand ()
-ex2 = do c' <- declareInt "circle"   ; let c = toTermI c'
-         t' <- declareInt "triangle" ; let t = toTermI t'
-         s' <- declareInt "square"   ; let s = toTermI s'
-         assert $ (c + c) `eq` 10
-         assert $ (c*s + s) `eq` 12
-         assert $ (c*s - t*c) `eq` c
-         checkSat
-         getModel
+ex2 = do ds' <- traverse declareInt ["circle", "triangle", "square"]
+         case map toTermI ds' of 
+           [c, t, s] => 
+             do assert $ (c + c) `eq` 10
+                assert $ (c*s + s) `eq` 12
+                assert $ (c*s - t*c) `eq` c
+                checkSat
+                getModel
+           _ => Pure ()
 
 ex3 : SMTCommand ()
-ex3 = do d' <- declareInt "D" ; let d = toTermI d'
-         e' <- declareInt "E" ; let e = toTermI e'
-         m' <- declareInt "M" ; let m = toTermI m'
-         n' <- declareInt "N" ; let n = toTermI n'
-         o' <- declareInt "O" ; let o = toTermI o'
-         r' <- declareInt "R" ; let r = toTermI r'
-         s' <- declareInt "S" ; let s = toTermI s'
-         y' <- declareInt "Y" ; let y = toTermI y'
-         assert $ distinct [d, e, m, n, o, r, s, y]
-         assert $ (0 `le` d) `and` (d `le` 9)
-         assert $ (0 `le` e) `and` (e `le` 9)
-         assert $ (0 `le` m) `and` (m `le` 9)
-         assert $ (0 `le` n) `and` (n `le` 9)
-         assert $ (0 `le` o) `and` (o `le` 9)
-         assert $ (0 `le` r) `and` (r `le` 9)
-         assert $ (0 `le` s) `and` (s `le` 9)
-         assert $ (0 `le` y) `and` (y `le` 9)
-         assert $ (1000*s+100*e+10*n+d + 1000*m+100*o+10*r+e) `eq` (10000*m+1000*o+100*n+10*e+y)
-         checkSat
-         getModel
+ex3 = do ds' <- traverse declareInt ["D", "E", "M", "N", "O", "R", "S", "Y"] 
+         let ds = map toTermI ds'
+         let isDigit = \x => (0 `le` x) `and` (x `le` 9)
+         let construct = \xs : List Term => sum $ zipWith (*) (reverse xs) $ map fromInteger $ take (length xs) (iterate (*10) 1)
+         assert $ distinct ds
+         traverse_ (assert . isDigit) ds
+         case ds of 
+           [d,e,m,n,o,r,s,y] => 
+             do let send  = construct [s,e,n,d]
+                let more  = construct [m,o,r,e]
+                let money = construct [m,o,n,e,y]
+                assert $ (send + more) `eq` money
+                checkSat
+                getModel    
+           _ => Pure ()
+
+ex4 : SMTCommand ()
+ex4 = do ds' <- traverse declareInt ["A", "I", "L", "N", "O", "R", "S", "T", "V"]
+         let ds = map toTermI ds'
+         let isDigit = \x => (0 `le` x) `and` (x `le` 9)
+         let construct = \xs : List Term => sum $ zipWith (*) (reverse xs) $ map fromInteger $ take (length xs) (iterate (*10) 1)         
+         assert $ distinct ds
+         traverse_ (assert . isDigit) ds
+         case ds of 
+           [a,i,l,n,o,r,s,t,v] =>
+             do let violin = construct [v,i,o,l,i,n]               
+                let viola  = construct [v,i,o,l,a]               
+                let sonata = construct [s,o,n,a,t,a]               
+                let trio   = construct [t,r,i,o]               
+                assert $ (violin + violin + viola) `eq` (trio + sonata)
+                checkSat
+                getModel
+           _ => Pure ()
+               
+         
+ex5 : SMTCommand ()
+ex5 = do ds' <- traverse declareInt ["H", "E", "L", "O", "W", "R", "D"]
+         let ds = map toTermI ds'
+         let isPos = \x => (1 `le` x) `and` (x `le` 9) 
+         assert $ distinct ds
+         traverse_ (assert . isPos) ds
+         case ds of  
+           [h, e, l, o, w, r, d] =>
+             do assert $ (h + e + l + l + o) `eq` 25
+                assert $ (w + o + r + l + d) `eq` 25
+                checkSat
+                getModel         
+           _ => Pure ()
 
 writeSMT : SMTCommand a -> (fname : String) -> IO ()
 writeSMT cmd fname = do Default.writeDoc fname $ ppScript $ renderCommands cmd
                         pure ()
 
+execZ3 : (infile, outfile : String) -> IO Int
+execZ3 infile outfile = system $ "z3 -smt2 " ++ infile ++ " > " ++ outfile
+
 main : IO ()
-main = writeSMT ex3 "test3.smt2"
+main = do let inf = "test4.smt2"
+          let outf = "out.smt2"
+          writeSMT ex4 inf
+          i <- execZ3 inf outf
+          printLn i
+          eos <- readFile outf
+          case eos of 
+            Left err => printLn err
+            Right str => for_ (lines str) putStrLn
