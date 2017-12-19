@@ -9,4 +9,4 @@ modules = Util
         , Parse
         , DSL
         
-opts = "-p contrib -p bifunctors -p idris_free --total"
+opts = "-p contrib -p idris_free --total"
