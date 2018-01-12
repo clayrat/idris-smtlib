@@ -9,8 +9,8 @@ import AST
 %default total
 %access public export
 
-declare : String -> String -> Command
-declare name sort = DeclareConst (MkSymbol name) (MkSort (MkIdentifier (MkSymbol sort) []) [])
+declareConst : String -> String -> Command
+declareConst name sort = DeclareConst (MkSymbol name) (MkSort (MkIdentifier (MkSymbol sort) []) [])
 
 var : String -> Term
 var name = QI (MkQIdentifier (MkIdentifier (MkSymbol name) []) Nothing)
@@ -33,12 +33,24 @@ distinct = app "distinct"
 
 Num Term where
   fromInteger i = Lit (Numeral i)
-  t1 + t2 = app "+" [ t1, t2 ]
-  t1 * t2 = app "*" [ t1, t2 ]
+  t1 + t2 = app "+" [t1, t2]
+  t1 * t2 = app "*" [t1, t2]
 
 Neg Term where
-  negate t = app "-" [ 0, t ]
-  t1 - t2 = app "-" [ t1, t2 ]
+  negate t = app "-" [0, t]
+  t1 - t2 = app "-" [t1, t2]
+
+index : Term -> Term -> Term
+index t1 t2 = app "_" [t1, t2]
+
+bvand : Term -> Term -> Term
+bvand t1 t2 = app "bvand" [t1, t2]
+
+bvashr : Term -> Term -> Term
+bvashr t1 t2 = app "bvashr" [t1, t2]
+
+--bvlit : String -> Nat -> Term
+--bvlit s n = index 
 
 d : Double -> Term
 d x = Lit (Decimal x)
@@ -53,41 +65,53 @@ data SMTInt = IntVar String
 toTermI : SMTInt -> Term
 toTermI (IntVar name) = var name
 
-data SMTCommandF : Type -> Type where
-  SDeclareReal : String -> SMTCommandF SMTReal
-  SDeclareInt : String -> SMTCommandF SMTInt
-  SAssert : Term -> SMTCommandF ()
-  SCheckSat : SMTCommandF ()
-  SGetModel : SMTCommandF ()
+data SMTBV : Nat -> Type where 
+  BVVar : String -> (n : Nat) -> SMTBV n
 
-SMTCommand : Type -> Type
-SMTCommand = Freer SMTCommandF
+toTermBV : SMTBV n -> Term
+toTermBV (BVVar name _) = var name
 
-declareReal : String -> SMTCommand SMTReal
+data SMTScriptF : Type -> Type where
+  SDeclareReal : String -> SMTScriptF SMTReal
+  SDeclareInt : String -> SMTScriptF SMTInt
+  SDeclareBV : String -> (n : Nat) -> SMTScriptF (SMTBV n)
+  SAssert : Term -> SMTScriptF ()
+  SCheckSat : SMTScriptF ()
+  SGetModel : SMTScriptF ()
+
+SMTScript : Type -> Type
+SMTScript = Freer SMTScriptF
+
+declareReal : String -> SMTScript SMTReal
 declareReal s = liftF $ SDeclareReal s
 
-declareInt : String -> SMTCommand SMTInt
+declareInt : String -> SMTScript SMTInt
 declareInt s = liftF $ SDeclareInt s
 
-assert : Term -> SMTCommand ()
+declareBV : String -> (n : Nat) -> SMTScript (SMTBV n)
+declareBV s n = liftF $ SDeclareBV s n
+
+assert : Term -> SMTScript ()
 assert t = liftF $ SAssert t 
 
-checkSat : SMTCommand ()
+checkSat : SMTScript ()
 checkSat = liftF SCheckSat 
 
-getModel : SMTCommand ()
+getModel : SMTScript ()
 getModel = liftF SGetModel
 
-writeCommands : SMTCommand a -> Writer (List Command) a
+writeCommands : SMTScript a -> Writer (List Command) a
 writeCommands = foldFreer $ \instruction =>
   case instruction of
-    SDeclareReal s => do tell [declare s "Real"]
+    SDeclareReal s => do tell [declareConst s "Real"]
                          pure $ RealVar s
-    SDeclareInt s => do tell [declare s "Int"]
+    SDeclareInt s => do tell [declareConst s "Int"]
                         pure $ IntVar s
+    SDeclareBV s n => do tell [declareConst s $ "(_ BitVec " ++ show n ++ ")"]
+                         pure $ BVVar s n
     SAssert t => tell [Assert t]
     SCheckSat => tell [CheckSat]
     SGetModel => tell [GetModel]
 
-renderCommands : SMTCommand a -> List Command
+renderCommands : SMTScript a -> List Command
 renderCommands = snd . runIdentity . runWriterT . writeCommands
