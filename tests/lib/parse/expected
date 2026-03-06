@@ -1,0 +1,46 @@
+=== Test: parseSExpr ===
+  Symbol 'foo': Just foo
+  Keyword ':produce-models': Just :produce-models
+  Simple list: Just (foo bar baz)
+  Nested list: Just (foo (bar baz) qux)
+  Empty list: Just ()
+  DONE
+
+=== Test: parseTerm ===
+  Variable 'x': Just x
+  FunApp '(+ x y)': Just (+ x y)
+  DONE
+
+=== Test: parseCommand ===
+  check-sat: Just check-sat
+  get-model: Just get-model
+  assert: Just assert x
+  declare-const: Just declare-const x Bool
+  reset: Just reset
+  DONE
+
+=== Test: parseCommandFromString ===
+  check-sat: Just check-sat
+  declare-const: Just declare-const x Real
+  assert: Just assert (> x 0)
+  DONE
+
+=== Test: parseScript ===
+  Single command: Just (check-sat)
+  Multiple commands: Just (declare-const x Real)
+(assert (> x 0))
+(check-sat)
+  DONE
+
+=== Test: Round-trip ===
+  Parse twice: OK
+  DONE
+
+=== Test: Error Handling ===
+  Valid: OK
+  Invalid: OK
+  SExpr valid: OK
+  SExpr empty: OK
+  DONE
+
+=== All parser tests completed ===

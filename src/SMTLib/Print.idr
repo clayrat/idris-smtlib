@@ -27,6 +27,7 @@ public export
 ppLiteral : Literal -> Doc ()
 ppLiteral (Numeral i) = pretty i
 ppLiteral (Decimal d) = pretty d
+ppLiteral (StringLit s) = pretty "\"" <+> pretty s <+> pretty "\""
 
 -- TODO use sizeAccessible? it doesn't like ppSort passed to map recursively
 mutual
@@ -51,6 +52,7 @@ mutual
   ppSExpr (SList sexprs) = parens (hsep (ppSExprAux sexprs))
   ppSExpr (SKeyword kw) = pretty kw
   ppSExpr (SSymbol sym) = ppSym sym
+  ppSExpr (SLiteral lit) = ppLiteral lit
 
   public export
   ppSExprAux : List SExpr -> List (Doc ())

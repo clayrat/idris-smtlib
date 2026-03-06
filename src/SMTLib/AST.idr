@@ -6,13 +6,15 @@ public export
 data Symbol = MkSymbol String
 
 public export
+data Literal = Numeral Integer
+             | Decimal Double -- TODO something with better precision
+             | StringLit String
+
+public export
 data SExpr = SList (List SExpr)
            | SKeyword String
            | SSymbol Symbol
-
-public export
-data Literal = Numeral Integer
-             | Decimal Double -- TODO something with better precision
+           | SLiteral Literal
 
 -- Identifier used to be indexed with Index type, that could be either SSymbol or SNumeral.
 -- This is actually the current (2.5) SMT-LIB standard.

@@ -1,0 +1,6 @@
+#!/bin/sh
+
+rm -rf build || true
+
+flock "$1" pack -q install-deps main.ipkg && \
+pack exec Main.idr

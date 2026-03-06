@@ -1,0 +1,6 @@
+package test
+
+main = Main
+executable = main_test
+
+depends = smtlib
